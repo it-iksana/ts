@@ -17,21 +17,30 @@ export default function ConnectionStatus() {
   const [detail, setDetail] = useState<string>('')
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth
-      .getSession()
-      .then(({ error }) => {
-        if (error) {
+    // createClient() itself can throw synchronously (e.g. missing env
+    // vars) — that happens before the async chain below even starts, so it
+    // needs its own try/catch. Without this, a misconfiguration crashes the
+    // whole page instead of showing the clean error message below.
+    try {
+      const supabase = createClient()
+      supabase.auth
+        .getSession()
+        .then(({ error }) => {
+          if (error) {
+            setStatus('error')
+            setDetail(error.message)
+          } else {
+            setStatus('connected')
+          }
+        })
+        .catch((err: Error) => {
           setStatus('error')
-          setDetail(error.message)
-        } else {
-          setStatus('connected')
-        }
-      })
-      .catch((err: Error) => {
-        setStatus('error')
-        setDetail(err.message)
-      })
+          setDetail(err.message)
+        })
+    } catch (err) {
+      setStatus('error')
+      setDetail(err instanceof Error ? err.message : String(err))
+    }
   }, [])
 
   if (status === 'checking') {
