@@ -3,23 +3,9 @@
 import { useState } from 'react'
 import { addLeaveEntry } from './actions'
 
-const LEAVE_TYPES = [
-  { value: 'L', label: 'Leave' },
-  { value: 'SL', label: 'Sick' },
-  { value: 'CL', label: 'Casual' },
-  { value: 'CO', label: 'Comp-off' },
-]
-
-const DURATIONS = [
-  { value: 0.5, label: 'Half day' },
-  { value: 1, label: 'Full day' },
-]
-
 export default function AddLeaveForm({ entryDate }: { entryDate: string }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [leaveType, setLeaveType] = useState('L')
-  const [duration, setDuration] = useState(1)
 
   async function handleSubmit(formData: FormData) {
     setError('')
@@ -29,8 +15,8 @@ export default function AddLeaveForm({ entryDate }: { entryDate: string }) {
       if (!result.success) {
         setError(result.error)
       } else {
-        setLeaveType('L')
-        setDuration(1)
+        const form = document.getElementById('add-leave-form') as HTMLFormElement | null
+        form?.reset()
       }
     } catch {
       setError('Something went wrong. Please try again.')
@@ -40,58 +26,44 @@ export default function AddLeaveForm({ entryDate }: { entryDate: string }) {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form id="add-leave-form" action={handleSubmit} className="space-y-3">
       <input type="hidden" name="entry_date" value={entryDate} />
-      <input type="hidden" name="leave_type" value={leaveType} />
-      <input type="hidden" name="duration" value={duration} />
       {error && (
         <div className="text-sm bg-red-50 text-red-700 rounded-lg px-4 py-3">{error}</div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
-        <div className="flex gap-2">
-          {LEAVE_TYPES.map((t) => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setLeaveType(t.value)}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium border transition-colors ${
-                leaveType === t.value
-                  ? 'bg-brand-teal text-white border-brand-teal'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-brand-teal'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+        <select
+          name="leave_type"
+          required
+          defaultValue="L"
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-ink bg-white"
+        >
+          <option value="L">Leave</option>
+          <option value="SL">Sick Leave</option>
+          <option value="CL">Casual Leave</option>
+          <option value="CO">Comp-off</option>
+        </select>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Duration</label>
-        <div className="flex gap-2">
-          {DURATIONS.map((d) => (
-            <button
-              key={d.value}
-              type="button"
-              onClick={() => setDuration(d.value)}
-              className={`flex-1 rounded-lg py-2.5 text-sm font-medium border transition-colors ${
-                duration === d.value
-                  ? 'bg-brand-teal text-white border-brand-teal'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-brand-teal'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
+        <label className="block text-sm font-medium text-slate-700 mb-1">Duration</label>
+        <select
+          name="duration"
+          required
+          defaultValue="1"
+          className="w-full border border-slate-300 rounded-lg px-3 py-2 text-ink bg-white"
+        >
+          <option value="0.5">Half day</option>
+          <option value="1">Full day</option>
+        </select>
       </div>
 
       <button
         type="submit"
         disabled={submitting}
-        className="bg-brand-teal text-white rounded-lg px-5 py-2.5 font-medium disabled:opacity-50"
+        className="bg-brand-teal text-white rounded-lg px-5 py-2.5 font-medium disabled:opacity-50 w-full"
       >
         {submitting ? 'Adding…' : 'Mark leave'}
       </button>

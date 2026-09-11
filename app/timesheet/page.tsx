@@ -130,7 +130,7 @@ export default async function TimesheetPage({
         <h1 className="text-lg font-bold text-ink mt-1">Log Time</h1>
       </header>
 
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Date + running total — the one thing that should feel most prominent on this page */}
         <div className="bg-ink rounded-2xl p-5 mb-6 flex items-center justify-between">
           <a
@@ -186,19 +186,22 @@ export default async function TimesheetPage({
           </div>
         )}
 
-        {/* Add work entry */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-          <h2 className="font-semibold text-ink mb-4">Log time against a project</h2>
-          <AddEntryForm entryDate={entryDate} projects={projects} />
-        </div>
-
-        {/* Add leave — only offered if no leave already logged for this day */}
-        {!leave && (
-          <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="font-semibold text-ink mb-4">Or mark leave for this day</h2>
-            <AddLeaveForm entryDate={entryDate} />
+        {/* Add work entry + Add leave — side by side; leave is intentionally
+            narrower since it only needs two dropdowns, not a project/task
+            picker and a fraction row. */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div className="md:col-span-3 bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="font-semibold text-ink mb-4">Log time against a project</h2>
+            <AddEntryForm entryDate={entryDate} projects={projects} />
           </div>
-        )}
+
+          {!leave && (
+            <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+              <h2 className="font-semibold text-ink mb-4">Or mark leave</h2>
+              <AddLeaveForm entryDate={entryDate} />
+            </div>
+          )}
+        </div>
 
         {/* This week — at-a-glance status for Mon–Fri, doubles as quick navigation */}
         <div className="mt-8">
