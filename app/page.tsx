@@ -78,12 +78,12 @@ export default async function Home() {
         </div>
 
         <nav className="grid gap-3">
-          <div className="bg-white rounded-xl shadow p-4 text-slate-400 flex items-center justify-between">
-            <span>Log time</span>
-            <span className="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-1">
-              Coming soon
-            </span>
-          </div>
+          <a
+            href="/timesheet"
+            className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
+          >
+            Log time →
+          </a>
           {(employee.role === 'tl_dc' || employee.role === 'cost_admin') && (
             <>
               <a
@@ -97,6 +97,12 @@ export default async function Home() {
                 className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
               >
                 Manage employees →
+              </a>
+              <a
+                href="/admin/departments"
+                className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
+              >
+                Manage departments →
               </a>
             </>
           )}
