@@ -22,6 +22,16 @@ function addDays(iso: string, days: number) {
   return d.toISOString().slice(0, 10)
 }
 
+// Monday of the week containing this date. getUTCDay() is 0=Sunday..6=Saturday;
+// this maps it so Monday is always the start regardless of where the given
+// date falls in its own week.
+function mondayOf(iso: string) {
+  const d = new Date(iso + 'T00:00:00Z')
+  const dayOfWeek = d.getUTCDay()
+  const daysSinceMonday = (dayOfWeek + 6) % 7
+  return addDays(iso, -daysSinceMonday)
+}
+
 function formatDisplay(iso: string) {
   return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
     weekday: 'long',
@@ -31,6 +41,8 @@ function formatDisplay(iso: string) {
     timeZone: 'UTC',
   })
 }
+
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
 
 export default async function TimesheetPage({
   searchParams,
@@ -45,8 +57,10 @@ export default async function TimesheetPage({
 
   const params = await searchParams
   const entryDate = params.date ?? todayIso()
+  const weekStart = mondayOf(entryDate)
+  const weekEnd = addDays(weekStart, 4)
 
-  const [entriesRes, leaveRes, projectsRes] = await Promise.all([
+  const [entriesRes, leaveRes, projectsRes, weekEntriesRes, weekLeaveRes] = await Promise.all([
     supabase
       .from('timesheet_entries')
       .select('id, day_fraction, projects(name), tasks(name)')
@@ -64,6 +78,20 @@ export default async function TimesheetPage({
       .select('id, name, is_detailed, tasks(id, name)')
       .eq('is_active', true)
       .order('name'),
+    // Whole Mon–Fri range for the "This Week" overview below — separate
+    // from the single-day queries above, which stay scoped to entryDate.
+    supabase
+      .from('timesheet_entries')
+      .select('entry_date, day_fraction')
+      .eq('employee_id', user.id)
+      .gte('entry_date', weekStart)
+      .lte('entry_date', weekEnd),
+    supabase
+      .from('leave_entries')
+      .select('entry_date, duration')
+      .eq('employee_id', user.id)
+      .gte('entry_date', weekStart)
+      .lte('entry_date', weekEnd),
   ])
 
   const entries = entriesRes.data ?? []
@@ -72,6 +100,20 @@ export default async function TimesheetPage({
     ...p,
     tasks: (p.tasks as { id: number; name: string }[]) ?? [],
   }))
+
+  // Per-day totals for the week overview — work and leave combined, same
+  // as the single-day total above, just for all five days at once.
+  const weekTotals: Record<string, number> = {}
+  for (const e of weekEntriesRes.data ?? []) {
+    weekTotals[e.entry_date] = (weekTotals[e.entry_date] ?? 0) + Number(e.day_fraction)
+  }
+  for (const l of weekLeaveRes.data ?? []) {
+    weekTotals[l.entry_date] = (weekTotals[l.entry_date] ?? 0) + Number(l.duration)
+  }
+  const weekDays = WEEKDAY_LABELS.map((label, i) => {
+    const date = addDays(weekStart, i)
+    return { label, date, total: weekTotals[date] ?? 0 }
+  })
 
   const workTotal = entries.reduce((sum, e) => sum + Number(e.day_fraction), 0)
   const leaveTotal = leave ? Number(leave.duration) : 0
@@ -157,6 +199,37 @@ export default async function TimesheetPage({
             <AddLeaveForm entryDate={entryDate} />
           </div>
         )}
+
+        {/* This week — at-a-glance status for Mon–Fri, doubles as quick navigation */}
+        <div className="mt-8">
+          <p className="text-xs font-medium text-slate-400 mb-2">This week</p>
+          <div className="grid grid-cols-5 gap-2">
+            {weekDays.map((day) => {
+              const isViewing = day.date === entryDate
+              const isFull = day.total >= 1
+              const isPartial = day.total > 0 && day.total < 1
+              return (
+                <a
+                  key={day.date}
+                  href={`/timesheet?date=${day.date}`}
+                  className={`rounded-xl p-3 text-center border transition-colors ${
+                    isFull
+                      ? 'bg-brand-teal border-brand-teal text-white'
+                      : isPartial
+                        ? 'bg-brand-teal/10 border-brand-teal/30 text-ink'
+                        : 'bg-white border-slate-200 text-slate-400'
+                  } ${isViewing ? 'ring-2 ring-brand-blue ring-offset-2 ring-offset-paper' : ''}`}
+                >
+                  <p className="text-xs font-medium">{day.label}</p>
+                  <p className="text-xs mt-0.5 opacity-80">
+                    {new Date(day.date + 'T00:00:00Z').getUTCDate()}
+                  </p>
+                  <p className="text-sm font-semibold mt-1.5">{day.total.toFixed(2)}</p>
+                </a>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </main>
   )
