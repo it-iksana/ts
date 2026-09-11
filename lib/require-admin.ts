@@ -20,11 +20,15 @@ export async function requireAdmin() {
 
   const { data: employee } = await supabase
     .from('employees')
-    .select('id, full_name, employee_code, role')
+    .select('id, full_name, employee_code, role, is_active')
     .eq('id', user.id)
     .single()
 
-  if (!employee || (employee.role !== 'tl_dc' && employee.role !== 'cost_admin')) {
+  if (
+    !employee ||
+    !employee.is_active ||
+    (employee.role !== 'tl_dc' && employee.role !== 'cost_admin')
+  ) {
     redirect('/')
   }
 
