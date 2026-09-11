@@ -1,56 +1,64 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 type Status = 'checking' | 'connected' | 'error'
 
 /**
- * Genuine end-to-end proof, not a hardcoded "looks fine" message. Calls
- * Supabase's auth endpoint — this succeeds the moment the URL + publishable
- * key are valid and reachable, and needs no tables to exist yet, so it's a
- * clean first signal that the whole pipeline (env vars → Vercel → Supabase)
- * is actually wired up correctly.
+ * A genuine network reachability check — not supabase.auth.getSession(),
+ * which reads from local storage first and can resolve successfully
+ * without ever making a network call at all, especially with nobody
+ * logged in (the normal case for this page). That could show "connected"
+ * even if Supabase were completely unreachable.
+ *
+ * This makes a direct request to Supabase's REST endpoint instead. Any
+ * HTTP response at all — even an error status — proves the network path
+ * genuinely works, since we got a real reply from a real server. Only an
+ * actual fetch failure (DNS failure, connection refused, timeout) means
+ * unreachable. No session, no user data, and no secret key are involved —
+ * just the public URL and the already-public publishable key.
  */
 export default function ConnectionStatus() {
   const [status, setStatus] = useState<Status>('checking')
   const [detail, setDetail] = useState<string>('')
 
   useEffect(() => {
-    // createClient() itself can throw synchronously (e.g. missing env
-    // vars) — that happens before the async chain below even starts, so it
-    // needs its own try/catch. Without this, a misconfiguration crashes the
-    // whole page instead of showing the clean error message below.
-    try {
-      const supabase = createClient()
-      supabase.auth
-        .getSession()
-        .then(({ error }) => {
-          if (error) {
-            setStatus('error')
-            setDetail(error.message)
-          } else {
-            setStatus('connected')
-          }
+    async function checkReachability() {
+      try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+        if (!url || !key) {
+          throw new Error('NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is not set.')
+        }
+
+        // GET to the REST root — HEAD triggers a CORS preflight that
+        // Supabase's server doesn't answer for that method; GET is what
+        // the real SDK uses and is properly supported. We only care that
+        // a real HTTP response comes back, not what it actually contains.
+        await fetch(`${url}/rest/v1/`, {
+          method: 'GET',
+          headers: { apikey: key },
         })
-        .catch((err: Error) => {
-          setStatus('error')
-          setDetail(err.message)
-        })
-    } catch (err) {
-      setStatus('error')
-      setDetail(err instanceof Error ? err.message : String(err))
+
+        setStatus('connected')
+      } catch (err) {
+        setStatus('error')
+        setDetail(err instanceof Error ? err.message : String(err))
+      }
     }
+
+    checkReachability()
   }, [])
 
   if (status === 'checking') {
-    return <p className="text-sm text-slate-400">Checking Supabase connection…</p>
+    return <p className="text-sm text-slate-400">Checking whether Supabase is reachable…</p>
   }
 
   if (status === 'error') {
     return (
       <div className="text-sm bg-red-50 text-red-700 rounded-md px-4 py-3 text-left">
-        <p className="font-semibold mb-1">Could not reach Supabase</p>
+        <p className="font-semibold mb-1">Supabase is not reachable</p>
         <p className="text-red-600">{detail}</p>
         <p className="text-red-500 mt-2 text-xs">
           Check that NEXT_PUBLIC_SUPABASE_URL and
@@ -63,7 +71,7 @@ export default function ConnectionStatus() {
 
   return (
     <div className="text-sm bg-emerald-50 text-emerald-700 rounded-md px-4 py-3 font-medium">
-      ✓ Connected to Supabase
+      ✓ Supabase server responded — network path is working
     </div>
   )
 }

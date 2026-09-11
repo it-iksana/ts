@@ -17,7 +17,7 @@ export default async function EmployeesPage() {
     .select('id, employee_code, full_name, role, is_active, departments(name)')
     .order('full_name')
 
-  const { data: departments } = await supabase
+  const { data: departments, error: departmentsError } = await supabase
     .from('departments')
     .select('id, name')
     .order('name')
@@ -34,6 +34,13 @@ export default async function EmployeesPage() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="font-semibold text-slate-900 mb-4">Add an employee</h2>
+          {departmentsError && (
+            <div className="text-sm bg-red-50 text-red-700 rounded-md px-4 py-3 mb-4">
+              Couldn&apos;t load departments ({departmentsError.message}) — the
+              department field below won&apos;t work correctly until this is
+              fixed. This is a real error, not an empty list.
+            </div>
+          )}
           <NewEmployeeForm departments={departments ?? []} callerRole={caller.role} />
         </div>
 
