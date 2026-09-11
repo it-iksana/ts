@@ -5,7 +5,13 @@ import { createEmployee } from './actions'
 
 type Department = { id: number; name: string }
 
-export default function NewEmployeeForm({ departments }: { departments: Department[] }) {
+export default function NewEmployeeForm({
+  departments,
+  callerRole,
+}: {
+  departments: Department[]
+  callerRole: string
+}) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -98,7 +104,9 @@ export default function NewEmployeeForm({ departments }: { departments: Departme
           >
             <option value="employee">Employee</option>
             <option value="tl_dc">TL / DC</option>
-            <option value="cost_admin">Cost Admin</option>
+            {callerRole === 'cost_admin' && (
+              <option value="cost_admin">Cost Admin</option>
+            )}
           </select>
         </div>
         <div>

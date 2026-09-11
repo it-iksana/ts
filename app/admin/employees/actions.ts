@@ -35,6 +35,15 @@ export async function createEmployee(formData: FormData): Promise<CreateEmployee
   const departmentId = formData.get('department_id') ? Number(formData.get('department_id')) : null
   const dateOfJoining = String(formData.get('date_of_joining') ?? '')
 
+  // Checked here too, not just via the form's dropdown options — the
+  // database itself now enforces this as the real boundary (see migration
+  // 00003), but this catches it earlier, before any account gets created
+  // at all, with a message that actually explains what happened rather
+  // than surfacing a raw database rejection.
+  if (role === 'cost_admin' && caller.role !== 'cost_admin') {
+    return { success: false, error: 'Only a Cost Admin can grant Cost Admin access.' }
+  }
+
   if (!employeeCode || !fullName || !password || !dateOfJoining) {
     return { success: false, error: 'Employee code, name, password, and joining date are all required.' }
   }

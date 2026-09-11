@@ -9,7 +9,7 @@ const roleLabels: Record<string, string> = {
 }
 
 export default async function EmployeesPage() {
-  await requireAdmin()
+  const caller = await requireAdmin()
   const supabase = await createClient()
 
   const { data: employees } = await supabase
@@ -34,7 +34,7 @@ export default async function EmployeesPage() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="font-semibold text-slate-900 mb-4">Add an employee</h2>
-          <NewEmployeeForm departments={departments ?? []} />
+          <NewEmployeeForm departments={departments ?? []} callerRole={caller.role} />
         </div>
 
         <div className="bg-white rounded-xl shadow overflow-hidden">
