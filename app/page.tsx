@@ -57,27 +57,35 @@ export default async function Home() {
             </div>
 
             <nav className="grid gap-3">
-              <a
-                href="/timesheet"
-                className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
-              >
-                Log time →
-              </a>
+              <div className="bg-white rounded-xl shadow p-4 text-slate-400 flex items-center justify-between">
+                <span>Log time</span>
+                <span className="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-1">
+                  Coming soon
+                </span>
+              </div>
               {(employee.role === 'tl_dc' || employee.role === 'cost_admin') && (
-                <a
-                  href="/admin/projects"
-                  className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
-                >
-                  Manage projects, tasks & people →
-                </a>
+                <>
+                  <a
+                    href="/admin/projects"
+                    className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
+                  >
+                    Manage projects & tasks →
+                  </a>
+                  <a
+                    href="/admin/employees"
+                    className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
+                  >
+                    Manage employees →
+                  </a>
+                </>
               )}
               {employee.role === 'cost_admin' && (
-                <a
-                  href="/admin/reports"
-                  className="bg-white rounded-xl shadow p-4 hover:shadow-md transition-shadow font-medium text-slate-900"
-                >
-                  Cost & billing reports →
-                </a>
+                <div className="bg-white rounded-xl shadow p-4 text-slate-400 flex items-center justify-between">
+                  <span>Cost & billing reports</span>
+                  <span className="text-xs bg-slate-100 text-slate-500 rounded-full px-2 py-1">
+                    Coming soon
+                  </span>
+                </div>
               )}
             </nav>
           </>
