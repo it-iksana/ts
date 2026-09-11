@@ -82,9 +82,9 @@ export default function AddEntryForm({
           </select>
         </div>
 
-        {selectedProject?.is_detailed && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Task</label>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">Task</label>
+          {selectedProject?.is_detailed ? (
             <select
               name="task_id"
               required
@@ -97,8 +97,17 @@ export default function AddEntryForm({
                 </option>
               ))}
             </select>
-          </div>
-        )}
+          ) : (
+            <select
+              disabled
+              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-400 bg-slate-50"
+            >
+              <option>
+                {selectedProject ? 'Not needed for this project' : 'Select a project first'}
+              </option>
+            </select>
+          )}
+        </div>
       </div>
 
       <div>
