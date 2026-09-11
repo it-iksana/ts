@@ -84,7 +84,7 @@ export default function AddEntryForm({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Task</label>
-          {selectedProject?.is_detailed ? (
+          {selectedProject?.is_detailed && selectedProject.tasks.length > 0 ? (
             <select
               name="task_id"
               required
@@ -103,7 +103,11 @@ export default function AddEntryForm({
               className="w-full border border-slate-200 rounded-lg px-3 py-2 text-slate-400 bg-slate-50"
             >
               <option>
-                {selectedProject ? 'Not needed for this project' : 'Select a project first'}
+                {!selectedProject
+                  ? 'Select a project first'
+                  : selectedProject.is_detailed
+                    ? 'No tasks assigned to you on this project'
+                    : 'Not needed for this project'}
               </option>
             </select>
           )}
