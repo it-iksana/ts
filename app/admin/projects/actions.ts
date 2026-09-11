@@ -57,3 +57,20 @@ export async function createTask(projectId: number, formData: FormData): Promise
   revalidatePath('/admin/projects')
   return { success: true }
 }
+
+export async function assignTask(taskId: number, employeeId: string | null): Promise<ActionResult> {
+  const supabase = await createClient()
+  // Same reasoning as createProject above — tasks_update_admin_only on
+  // the real database is what actually enforces this, not this check.
+  // employeeId of null explicitly unassigns, returning to the original
+  // self-serve behavior for that task.
+  const { error } = await supabase
+    .from('tasks')
+    .update({ assigned_to: employeeId })
+    .eq('id', taskId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/projects')
+  return { success: true }
+}

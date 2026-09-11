@@ -8,10 +8,19 @@ export default async function ProjectsPage() {
   await requireAdmin()
   const supabase = await createClient()
 
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, name, is_detailed, is_active, tasks(id, name)')
-    .order('name')
+  const [projectsRes, employeesRes] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('id, name, is_detailed, is_active, tasks(id, name, assigned_to)')
+      .order('name'),
+    supabase
+      .from('employees')
+      .select('id, full_name')
+      .eq('is_active', true)
+      .order('full_name'),
+  ])
+  const projects = projectsRes.data
+  const employees = employeesRes.data ?? []
 
   return (
     <main className="min-h-screen bg-paper">
@@ -51,7 +60,11 @@ export default async function ProjectsPage() {
               {project.is_detailed && (
                 <TaskManager
                   projectId={project.id}
-                  tasks={(project.tasks as { id: number; name: string }[]) ?? []}
+                  tasks={
+                    (project.tasks as { id: number; name: string; assigned_to: string | null }[]) ??
+                    []
+                  }
+                  employees={employees}
                 />
               )}
             </div>

@@ -1,19 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { createTask } from './actions'
+import { createTask, assignTask } from './actions'
 
-type Task = { id: number; name: string }
+type Task = { id: number; name: string; assigned_to: string | null }
+type Employee = { id: string; full_name: string }
 
 export default function TaskManager({
   projectId,
   tasks,
+  employees,
 }: {
   projectId: number
   tasks: Task[]
+  employees: Employee[]
 }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [assignError, setAssignError] = useState<Record<number, string>>({})
 
   async function handleSubmit(formData: FormData) {
     setError('')
@@ -35,17 +39,48 @@ export default function TaskManager({
     }
   }
 
+  async function handleAssign(taskId: number, employeeId: string) {
+    setAssignError((prev) => ({ ...prev, [taskId]: '' }))
+    try {
+      const result = await assignTask(taskId, employeeId === '' ? null : employeeId)
+      if (!result.success) {
+        setAssignError((prev) => ({ ...prev, [taskId]: result.error }))
+      }
+    } catch {
+      setAssignError((prev) => ({ ...prev, [taskId]: 'Something went wrong.' }))
+    }
+  }
+
   return (
     <div className="mt-3 pl-4 border-l-2 border-slate-100">
       <p className="text-sm font-medium text-slate-500 mb-2">Tasks</p>
       {tasks.length === 0 && (
         <p className="text-sm text-slate-400 mb-2">No tasks yet.</p>
       )}
-      <ul className="text-sm text-slate-700 mb-3 space-y-1">
+      <div className="space-y-2 mb-3">
         {tasks.map((t) => (
-          <li key={t.id}>• {t.name}</li>
+          <div key={t.id}>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className="text-ink">{t.name}</span>
+              <select
+                defaultValue={t.assigned_to ?? ''}
+                onChange={(e) => handleAssign(t.id, e.target.value)}
+                className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
+              >
+                <option value="">Unassigned</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {assignError[t.id] && (
+              <p className="text-xs text-red-600 mt-1">{assignError[t.id]}</p>
+            )}
+          </div>
         ))}
-      </ul>
+      </div>
 
       {error && (
         <div className="text-xs bg-red-50 text-red-700 rounded-lg px-3 py-2 mb-2">
