@@ -31,12 +31,10 @@ export default function NewDepartmentForm() {
   return (
     <form id="new-department-form" action={handleSubmit} className="space-y-3">
       {error && (
-        <div className="text-sm bg-red-50 text-red-700 rounded-md px-4 py-3">
-          {error}
-        </div>
+        <div className="text-sm bg-red-50 text-red-700 rounded-lg px-4 py-3">{error}</div>
       )}
       {success && (
-        <div className="text-sm bg-emerald-50 text-emerald-700 rounded-md px-4 py-3">
+        <div className="text-sm bg-emerald-50 text-emerald-700 rounded-lg px-4 py-3">
           ✓ Department added.
         </div>
       )}
@@ -49,13 +47,13 @@ export default function NewDepartmentForm() {
             name="name"
             type="text"
             required
-            className="w-full border border-slate-300 rounded-md px-3 py-2 text-slate-900"
+            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-ink"
           />
         </div>
         <button
           type="submit"
           disabled={submitting}
-          className="bg-sky-700 text-white rounded-md px-4 py-2 font-medium disabled:opacity-50 whitespace-nowrap"
+          className="bg-brand-blue text-white rounded-lg px-5 py-2.5 font-medium disabled:opacity-50 whitespace-nowrap"
         >
           {submitting ? 'Adding…' : 'Add Department'}
         </button>

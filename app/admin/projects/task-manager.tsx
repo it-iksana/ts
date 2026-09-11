@@ -37,7 +37,7 @@ export default function TaskManager({
 
   return (
     <div className="mt-3 pl-4 border-l-2 border-slate-100">
-      <p className="text-xs font-medium text-slate-500 uppercase mb-2">Tasks</p>
+      <p className="text-sm font-medium text-slate-500 mb-2">Tasks</p>
       {tasks.length === 0 && (
         <p className="text-sm text-slate-400 mb-2">No tasks yet.</p>
       )}
@@ -48,7 +48,7 @@ export default function TaskManager({
       </ul>
 
       {error && (
-        <div className="text-xs bg-red-50 text-red-700 rounded-md px-3 py-2 mb-2">
+        <div className="text-xs bg-red-50 text-red-700 rounded-lg px-3 py-2 mb-2">
           {error}
         </div>
       )}
@@ -63,12 +63,12 @@ export default function TaskManager({
           type="text"
           required
           placeholder="New task name"
-          className="flex-1 border border-slate-300 rounded-md px-3 py-1.5 text-sm text-slate-900"
+          className="flex-1 border border-slate-300 rounded-lg px-3 py-1.5 text-sm text-ink"
         />
         <button
           type="submit"
           disabled={submitting}
-          className="bg-slate-700 text-white rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
+          className="bg-brand-teal text-white rounded-lg px-3 py-1.5 text-sm font-medium disabled:opacity-50"
         >
           {submitting ? 'Adding…' : 'Add'}
         </button>

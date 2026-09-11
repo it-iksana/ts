@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/*
+ * iKSANA's own brand palette — the same colors already used across the
+ * IAF portal and the Attendance proposal deck. Registered as real
+ * Tailwind color tokens (bg-brand-blue, text-ink, etc.) rather than
+ * hardcoded hex values scattered through every component.
+ */
+@theme {
+  --color-brand-blue: #2374ab;
+  --color-brand-teal: #1f96b0;
+  --color-ink: #10202e;
+  --color-paper: #f6f8fa;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,13 +21,6 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {

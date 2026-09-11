@@ -1,3 +1,4 @@
+import { FolderKanban } from 'lucide-react'
 import { requireAdmin } from '@/lib/require-admin'
 import { createClient } from '@/lib/supabase/server'
 import NewProjectForm from './new-project-form'
@@ -13,28 +14,29 @@ export default async function ProjectsPage() {
     .order('name')
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-paper">
       <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <a href="/" className="text-sm text-sky-700">← Back</a>
-        <h1 className="text-lg font-bold text-slate-900 mt-1">
-          Projects & Tasks
-        </h1>
+        <a href="/" className="text-sm text-brand-blue">Back</a>
+        <div className="flex items-center gap-2 mt-1">
+          <FolderKanban className="w-5 h-5 text-brand-teal" strokeWidth={1.75} />
+          <h1 className="text-lg font-bold text-ink">Projects & Tasks</h1>
+        </div>
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-xl shadow p-6 mb-6">
-          <h2 className="font-semibold text-slate-900 mb-4">Add a project</h2>
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">
+          <h2 className="font-semibold text-ink mb-4">Add a project</h2>
           <NewProjectForm />
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {(projects ?? []).map((project) => (
-            <div key={project.id} className="bg-white rounded-xl shadow p-5">
+            <div key={project.id} className="bg-white rounded-xl border border-slate-200 p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-slate-900">{project.name}</h3>
+                <h3 className="font-semibold text-ink">{project.name}</h3>
                 <div className="flex items-center gap-2">
                   {project.is_detailed && (
-                    <span className="text-xs bg-sky-50 text-sky-700 rounded-full px-2 py-1">
+                    <span className="text-xs bg-brand-blue/10 text-brand-blue rounded-full px-2 py-1">
                       Detailed
                     </span>
                   )}
@@ -56,7 +58,7 @@ export default async function ProjectsPage() {
           ))}
 
           {(!projects || projects.length === 0) && (
-            <div className="bg-white rounded-xl shadow p-6 text-center text-slate-400">
+            <div className="bg-white rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-400">
               No projects yet — add the first one above.
             </div>
           )}
