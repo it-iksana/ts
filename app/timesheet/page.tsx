@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import AddEntryForm from './add-entry-form'
 import AddLeaveForm from './add-leave-form'
 import DeleteEntryButton from './delete-entry-button'
+import MyTasks from './my-tasks'
 import { deleteTimesheetEntry, deleteLeaveEntry } from './actions'
 
 const leaveTypeLabels: Record<string, string> = {
@@ -60,42 +61,54 @@ export default async function TimesheetPage({
   const weekStart = mondayOf(entryDate)
   const weekEnd = addDays(weekStart, 4)
 
-  const [entriesRes, leaveRes, projectsRes, weekEntriesRes, weekLeaveRes] = await Promise.all([
-    supabase
-      .from('timesheet_entries')
-      .select('id, day_fraction, projects(name), tasks(name)')
-      .eq('employee_id', user.id)
-      .eq('entry_date', entryDate)
-      .order('id'),
-    supabase
-      .from('leave_entries')
-      .select('id, leave_type, duration')
-      .eq('employee_id', user.id)
-      .eq('entry_date', entryDate)
-      .maybeSingle(),
-    supabase
-      .from('projects')
-      .select('id, name, is_detailed, tasks(id, name)')
-      .eq('is_active', true)
-      .order('name'),
-    // Whole Mon–Fri range for the "This Week" overview below — separate
-    // from the single-day queries above, which stay scoped to entryDate.
-    supabase
-      .from('timesheet_entries')
-      .select('entry_date, day_fraction')
-      .eq('employee_id', user.id)
-      .gte('entry_date', weekStart)
-      .lte('entry_date', weekEnd),
-    supabase
-      .from('leave_entries')
-      .select('entry_date, duration')
-      .eq('employee_id', user.id)
-      .gte('entry_date', weekStart)
-      .lte('entry_date', weekEnd),
-  ])
+  const [entriesRes, leaveRes, projectsRes, weekEntriesRes, weekLeaveRes, myTasksRes] =
+    await Promise.all([
+      supabase
+        .from('timesheet_entries')
+        .select('id, day_fraction, projects(name), tasks(name)')
+        .eq('employee_id', user.id)
+        .eq('entry_date', entryDate)
+        .order('id'),
+      supabase
+        .from('leave_entries')
+        .select('id, leave_type, duration')
+        .eq('employee_id', user.id)
+        .eq('entry_date', entryDate)
+        .maybeSingle(),
+      supabase
+        .from('projects')
+        .select('id, name, is_detailed, tasks(id, name)')
+        .eq('is_active', true)
+        .order('name'),
+      // Whole Mon–Fri range for the "This Week" overview below — separate
+      // from the single-day queries above, which stay scoped to entryDate.
+      supabase
+        .from('timesheet_entries')
+        .select('entry_date, day_fraction')
+        .eq('employee_id', user.id)
+        .gte('entry_date', weekStart)
+        .lte('entry_date', weekEnd),
+      supabase
+        .from('leave_entries')
+        .select('entry_date, duration')
+        .eq('employee_id', user.id)
+        .gte('entry_date', weekStart)
+        .lte('entry_date', weekEnd),
+      // Tasks assigned to this employee, regardless of date — shown as
+      // "Assigned to you" below, separate from the day-specific sections.
+      supabase
+        .from('tasks')
+        .select('id, name, status, projects(name)')
+        .eq('assigned_to', user.id)
+        .order('name'),
+    ])
 
   const entries = entriesRes.data ?? []
   const leave = leaveRes.data
+  const myTasks = (myTasksRes.data ?? []).map((t) => ({
+    ...t,
+    projects: t.projects as unknown as { name: string } | null,
+  }))
   const projects = (projectsRes.data ?? []).map((p) => ({
     ...p,
     tasks: (p.tasks as { id: number; name: string }[]) ?? [],
@@ -152,6 +165,8 @@ export default async function TimesheetPage({
             Next →
           </a>
         </div>
+
+        <MyTasks tasks={myTasks} />
 
         {/* Existing entries — data rows, not another card */}
         {(entries.length > 0 || leave) && (

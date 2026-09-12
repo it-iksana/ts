@@ -101,3 +101,15 @@ export async function deleteLeaveEntry(id: number): Promise<ActionResult> {
   revalidatePath('/timesheet')
   return { success: true }
 }
+
+export async function updateTaskStatus(taskId: number, status: string): Promise<ActionResult> {
+  const supabase = await createClient()
+  // The database itself enforces that this can only change status and
+  // nothing else about the task (see migration 00014) — this action
+  // doesn't need to re-check that, only relay whatever the database
+  // says if something's wrong.
+  const { error } = await supabase.from('tasks').update({ status }).eq('id', taskId)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/timesheet')
+  return { success: true }
+}
