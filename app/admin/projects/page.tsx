@@ -15,7 +15,7 @@ export default async function ProjectsPage() {
       .order('name'),
     supabase
       .from('employees')
-      .select('id, full_name')
+      .select('id, full_name, employee_code')
       .eq('is_active', true)
       .order('full_name'),
   ])

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createTask, assignTask, setTaskDueDate } from './actions'
 
 type Task = { id: number; name: string; assigned_to: string | null; due_date: string | null }
-type Employee = { id: string; full_name: string }
+type Employee = { id: string; full_name: string | null; employee_code: string }
 
 export default function TaskManager({
   projectId,
@@ -89,7 +89,7 @@ export default function TaskManager({
                   <option value="">Unassigned</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.full_name}
+                      {e.full_name ?? e.employee_code}
                     </option>
                   ))}
                 </select>

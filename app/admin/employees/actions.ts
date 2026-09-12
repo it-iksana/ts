@@ -44,8 +44,8 @@ export async function createEmployee(formData: FormData): Promise<ActionResult> 
     return { success: false, error: 'Only a Cost Admin can grant Cost Admin access.' }
   }
 
-  if (!employeeCode || !fullName || !password || !dateOfJoining) {
-    return { success: false, error: 'Employee code, name, password, and joining date are all required.' }
+  if (!employeeCode || !password || !dateOfJoining) {
+    return { success: false, error: 'Employee code, password, and joining date are all required.' }
   }
   if (password.length < 8) {
     return { success: false, error: 'Password must be at least 8 characters.' }
@@ -73,7 +73,7 @@ export async function createEmployee(formData: FormData): Promise<ActionResult> 
   const { error: employeeError } = await supabase.from('employees').insert({
     id: authUser.user.id,
     employee_code: employeeCode,
-    full_name: fullName,
+    full_name: fullName || null,
     role,
     department_id: departmentId,
     date_of_joining: dateOfJoining,

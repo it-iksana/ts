@@ -57,7 +57,7 @@ export default async function EmployeesPage() {
               {(employees ?? []).map((emp) => (
                 <tr key={emp.id} className="border-t border-slate-100">
                   <td className="px-4 py-2 text-ink">{emp.employee_code}</td>
-                  <td className="px-4 py-2 text-ink">{emp.full_name}</td>
+                  <td className="px-4 py-2 text-ink">{emp.full_name ?? <span className="text-slate-400 italic">Not set</span>}</td>
                   <td className="px-4 py-2 text-slate-500">
                     {(emp.departments as unknown as { name: string } | null)?.name ?? '—'}
                   </td>

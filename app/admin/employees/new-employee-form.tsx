@@ -73,11 +73,12 @@ export default function NewEmployeeForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Full Name <span className="text-slate-400 font-normal">(optional — they can set this themselves)</span>
+          </label>
           <input
             name="full_name"
             type="text"
-            required
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-ink"
           />
         </div>

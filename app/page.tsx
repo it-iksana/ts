@@ -53,7 +53,7 @@ export default async function Home() {
       <div className="max-w-2xl mx-auto px-6 py-10">
         <div className="mb-8">
           <p className="text-sm text-slate-500">Welcome back</p>
-          <h2 className="text-2xl font-bold text-ink">{employee.full_name}</h2>
+          <h2 className="text-2xl font-bold text-ink">{employee.full_name ?? employee.employee_code}</h2>
           <p className="text-sm text-slate-500 mt-0.5">
             {employee.employee_code} &nbsp;·&nbsp; {roleLabels[employee.role] ?? employee.role}
           </p>
