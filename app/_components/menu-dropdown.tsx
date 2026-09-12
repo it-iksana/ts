@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu as MenuIcon } from 'lucide-react'
 
-export default function MenuDropdown({ isAdmin }: { isAdmin: boolean }) {
+export default function MenuDropdown({
+  isAdmin,
+  isCostAdmin,
+}: {
+  isAdmin: boolean
+  isCostAdmin: boolean
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -60,6 +66,14 @@ export default function MenuDropdown({ isAdmin }: { isAdmin: boolean }) {
               >
                 Departments
               </a>
+              {isCostAdmin && (
+                <a
+                  href="/admin/reports"
+                  className="block px-4 py-2 text-sm text-ink hover:bg-paper"
+                >
+                  Cost Reports
+                </a>
+              )}
             </>
           )}
         </div>

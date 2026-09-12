@@ -97,10 +97,12 @@ export default async function Home() {
         )}
 
         {employee.role === 'cost_admin' && (
-          <div className="mt-3 flex items-center gap-3 bg-white border border-dashed border-slate-300 rounded-xl p-4 text-slate-400">
-            <BarChart3 className="w-5 h-5" strokeWidth={1.75} />
-            <span className="text-sm flex-1">Cost & billing reports</span>
-            <span className="text-xs bg-slate-100 rounded-full px-2 py-0.5">Coming soon</span>
+          <div className="mt-3">
+            <AdminBox
+              href="/admin/reports"
+              icon={<BarChart3 className="w-5 h-5" strokeWidth={1.75} />}
+              label="Cost Reports"
+            />
           </div>
         )}
       </div>

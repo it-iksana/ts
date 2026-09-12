@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import AppHeader from '../../_components/app-header'
 import NewEmployeeForm from './new-employee-form'
 import ResetPasswordButton from './reset-password-button'
+import CostRateButton from './cost-rate-button'
 
 const roleLabels: Record<string, string> = {
   employee: 'Employee',
@@ -13,6 +14,7 @@ const roleLabels: Record<string, string> = {
 export default async function EmployeesPage() {
   const caller = await requireAdmin()
   const supabase = await createClient()
+  const isCostAdmin = caller.role === 'cost_admin'
 
   const { data: employees } = await supabase
     .from('employees')
@@ -23,6 +25,20 @@ export default async function EmployeesPage() {
     .from('departments')
     .select('id, name')
     .order('name')
+
+  // Cost rates are hidden from TL/DC entirely — not even queried for
+  // them, on top of the RLS policy that would block it anyway. Empty for
+  // anyone but Cost Admin, so the query below is a genuine no-op if this
+  // isn't a Cost Admin viewing the page.
+  const costRates: Record<string, number> = {}
+  if (isCostAdmin) {
+    const { data: rates } = await supabase
+      .from('current_employee_cost_rates')
+      .select('employee_id, monthly_cost')
+    for (const r of rates ?? []) {
+      costRates[r.employee_id] = Number(r.monthly_cost)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-paper">
@@ -50,6 +66,7 @@ export default async function EmployeesPage() {
                 <th className="px-4 py-2 font-medium">Department</th>
                 <th className="px-4 py-2 font-medium">Role</th>
                 <th className="px-4 py-2 font-medium">Status</th>
+                {isCostAdmin && <th className="px-4 py-2 font-medium">Cost Rate</th>}
                 <th className="px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
@@ -69,6 +86,11 @@ export default async function EmployeesPage() {
                       <span className="text-slate-400">Inactive</span>
                     )}
                   </td>
+                  {isCostAdmin && (
+                    <td className="px-4 py-2 text-right">
+                      <CostRateButton employeeId={emp.id} currentRate={costRates[emp.id] ?? null} />
+                    </td>
+                  )}
                   <td className="px-4 py-2 text-right">
                     <ResetPasswordButton employeeId={emp.id} />
                   </td>
@@ -76,7 +98,7 @@ export default async function EmployeesPage() {
               ))}
               {(!employees || employees.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={isCostAdmin ? 7 : 6} className="px-4 py-6 text-center text-slate-400">
                     No employees yet — add the first one above.
                   </td>
                 </tr>

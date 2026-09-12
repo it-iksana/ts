@@ -22,12 +22,13 @@ export default async function AppHeader({ title }: { title: string }) {
     .single()
 
   const isAdmin = employee?.role === 'tl_dc' || employee?.role === 'cost_admin'
+  const isCostAdmin = employee?.role === 'cost_admin'
   const initial = user.email?.[0]?.toUpperCase() ?? '?'
 
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <MenuDropdown isAdmin={isAdmin} />
+        <MenuDropdown isAdmin={isAdmin} isCostAdmin={isCostAdmin} />
         <h1 className="text-lg font-bold text-ink">{title}</h1>
       </div>
       <ProfileDropdown initial={initial} />

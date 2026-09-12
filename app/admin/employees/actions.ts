@@ -130,3 +130,32 @@ export async function resetEmployeePassword(
 
   return { success: true }
 }
+
+export async function setEmployeeCostRate(
+  employeeId: string,
+  monthlyCost: number,
+  effectiveFrom: string
+): Promise<ActionResult> {
+  const supabase = await createClient()
+  // RLS on employee_cost_rates (cost_rates_admin_only) is what actually
+  // enforces this stays Cost Admin only — including blocking a TL/DC,
+  // who can otherwise fully manage this same Employees page. This is a
+  // plain insert through the regular client, no admin/secret key
+  // involved, since this table was never locked down from RLS the way
+  // creating a login needs to be.
+  const { error } = await supabase.from('employee_cost_rates').insert({
+    employee_id: employeeId,
+    monthly_cost: monthlyCost,
+    effective_from: effectiveFrom,
+  })
+
+  if (error) {
+    const message = error.message.includes('duplicate')
+      ? 'A rate already exists with that exact effective date.'
+      : error.message
+    return { success: false, error: message }
+  }
+
+  revalidatePath('/admin/employees')
+  return { success: true }
+}
