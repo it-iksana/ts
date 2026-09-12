@@ -59,21 +59,18 @@ export default function MyTasks({ tasks }: { tasks: MyTask[] }) {
       <p className="text-xs font-medium text-slate-400 mb-2">Assigned to you</p>
       <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
         {tasks.map((t) => (
-          <div key={t.id} className="flex items-center justify-between px-4 py-3 text-sm">
-            <div>
-              <span className="text-ink">{t.name}</span>
-              {t.projects && <span className="text-slate-500"> · {t.projects.name}</span>}
-              {t.due_date && (
-                <span className={`ml-2 text-xs ${dueDateColor(t.due_date, t.status)}`}>
-                  Due {formatDueDate(t.due_date)}
-                </span>
-              )}
-              {errors[t.id] && <p className="text-xs text-red-600 mt-1">{errors[t.id]}</p>}
-            </div>
+          <div key={t.id} className="px-4 py-3 text-sm">
+            <span className="text-ink font-medium">{t.name}</span>
+            {t.projects && <p className="text-slate-500 text-xs mt-0.5">{t.projects.name}</p>}
+            {t.due_date && (
+              <p className={`text-xs mt-0.5 ${dueDateColor(t.due_date, t.status)}`}>
+                Due {formatDueDate(t.due_date)}
+              </p>
+            )}
             <select
               defaultValue={t.status}
               onChange={(e) => handleChange(t.id, e.target.value)}
-              className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
+              className="w-full mt-2 text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
             >
               {Object.entries(STATUS_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -81,6 +78,7 @@ export default function MyTasks({ tasks }: { tasks: MyTask[] }) {
                 </option>
               ))}
             </select>
+            {errors[t.id] && <p className="text-xs text-red-600 mt-1">{errors[t.id]}</p>}
           </div>
         ))}
       </div>
