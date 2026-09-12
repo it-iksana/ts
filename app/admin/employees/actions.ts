@@ -5,9 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { employeeCodeToInternalEmail } from '@/lib/auth'
 
-export type CreateEmployeeResult = { success: true } | { success: false; error: string }
+export type ActionResult = { success: true } | { success: false; error: string }
 
-export async function createEmployee(formData: FormData): Promise<CreateEmployeeResult> {
+export async function createEmployee(formData: FormData): Promise<ActionResult> {
   // Re-check the caller is actually an admin server-side, even though the
   // page itself is already gated — a Server Action is a real network
   // endpoint on its own, callable directly, not just reachable by clicking
@@ -88,5 +88,45 @@ export async function createEmployee(formData: FormData): Promise<CreateEmployee
   }
 
   revalidatePath('/admin/employees')
+  return { success: true }
+}
+
+export async function resetEmployeePassword(
+  employeeId: string,
+  newPassword: string
+): Promise<ActionResult> {
+  // Re-checked server-side, same discipline as createEmployee above — this
+  // is a real network endpoint on its own, not just a button on a page
+  // that happens to check first.
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, error: 'Not signed in.' }
+  }
+  const { data: caller } = await supabase
+    .from('employees')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  if (!caller || (caller.role !== 'tl_dc' && caller.role !== 'cost_admin')) {
+    return { success: false, error: 'Not authorized to reset passwords.' }
+  }
+
+  if (newPassword.length < 8) {
+    return { success: false, error: 'Password must be at least 8 characters.' }
+  }
+
+  // Changing someone else's password needs the admin API — the same
+  // reason employee creation does. The regular self-service update API
+  // only ever changes the currently authenticated user's own password.
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.updateUserById(employeeId, {
+    password: newPassword,
+  })
+
+  if (error) return { success: false, error: error.message }
+
   return { success: true }
 }

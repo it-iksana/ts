@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/require-admin'
 import { createClient } from '@/lib/supabase/server'
 import AppHeader from '../../_components/app-header'
 import NewEmployeeForm from './new-employee-form'
+import ResetPasswordButton from './reset-password-button'
 
 const roleLabels: Record<string, string> = {
   employee: 'Employee',
@@ -49,6 +50,7 @@ export default async function EmployeesPage() {
                 <th className="px-4 py-2 font-medium">Department</th>
                 <th className="px-4 py-2 font-medium">Role</th>
                 <th className="px-4 py-2 font-medium">Status</th>
+                <th className="px-4 py-2 font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -67,11 +69,14 @@ export default async function EmployeesPage() {
                       <span className="text-slate-400">Inactive</span>
                     )}
                   </td>
+                  <td className="px-4 py-2 text-right">
+                    <ResetPasswordButton employeeId={emp.id} />
+                  </td>
                 </tr>
               ))}
               {(!employees || employees.length === 0) && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
                     No employees yet — add the first one above.
                   </td>
                 </tr>

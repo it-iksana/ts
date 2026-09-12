@@ -42,7 +42,17 @@ export default function ProfileDropdown({ initial }: { initial: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl border border-slate-200 shadow-lg py-2 z-10">
+        <div className="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-2 z-10">
+          <a href="/profile" className="block px-4 py-2 text-sm text-ink hover:bg-paper">
+            My Profile
+          </a>
+          <a
+            href="/profile/change-password"
+            className="block px-4 py-2 text-sm text-ink hover:bg-paper"
+          >
+            Change Password
+          </a>
+          <div className="border-t border-slate-100 my-2" />
           <button
             onClick={handleSignOut}
             className="block w-full text-left px-4 py-2 text-sm text-ink hover:bg-paper"
