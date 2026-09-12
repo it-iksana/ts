@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Clock, FolderKanban, Users, Building2, BarChart3 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import SignOutButton from './sign-out-button'
+import AppHeader from './_components/app-header'
 
 const roleLabels: Record<string, string> = {
   employee: 'Employee',
@@ -48,13 +48,7 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-paper">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold text-brand-blue">iKSANA</p>
-          <h1 className="text-lg font-bold text-ink">Timesheet</h1>
-        </div>
-        <SignOutButton />
-      </header>
+      <AppHeader title="Dashboard" />
 
       <div className="max-w-2xl mx-auto px-6 py-10">
         <div className="mb-8">

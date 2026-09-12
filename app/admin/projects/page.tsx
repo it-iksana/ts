@@ -1,6 +1,6 @@
-import { FolderKanban } from 'lucide-react'
 import { requireAdmin } from '@/lib/require-admin'
 import { createClient } from '@/lib/supabase/server'
+import AppHeader from '../../_components/app-header'
 import NewProjectForm from './new-project-form'
 import TaskManager from './task-manager'
 
@@ -24,13 +24,7 @@ export default async function ProjectsPage() {
 
   return (
     <main className="min-h-screen bg-paper">
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <a href="/" className="text-sm text-brand-blue">Back</a>
-        <div className="flex items-center gap-2 mt-1">
-          <FolderKanban className="w-5 h-5 text-brand-teal" strokeWidth={1.75} />
-          <h1 className="text-lg font-bold text-ink">Projects & Tasks</h1>
-        </div>
-      </header>
+      <AppHeader title="Projects & Tasks" />
 
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">

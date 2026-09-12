@@ -1,6 +1,6 @@
-import { Building2 } from 'lucide-react'
 import { requireAdmin } from '@/lib/require-admin'
 import { createClient } from '@/lib/supabase/server'
+import AppHeader from '../../_components/app-header'
 import NewDepartmentForm from './new-department-form'
 
 export default async function DepartmentsPage() {
@@ -14,13 +14,7 @@ export default async function DepartmentsPage() {
 
   return (
     <main className="min-h-screen bg-paper">
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <a href="/" className="text-sm text-brand-blue">Back</a>
-        <div className="flex items-center gap-2 mt-1">
-          <Building2 className="w-5 h-5 text-brand-teal" strokeWidth={1.75} />
-          <h1 className="text-lg font-bold text-ink">Departments</h1>
-        </div>
-      </header>
+      <AppHeader title="Departments" />
 
       <div className="max-w-2xl mx-auto px-6 py-8">
         <div className="bg-white rounded-xl border border-slate-200 p-6 mb-6">

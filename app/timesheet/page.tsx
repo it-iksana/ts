@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import AppHeader from '../_components/app-header'
 import AddEntryForm from './add-entry-form'
 import AddLeaveForm from './add-leave-form'
 import DeleteEntryButton from './delete-entry-button'
@@ -223,19 +224,7 @@ export default async function TimesheetPage({
 
   return (
     <main className="min-h-screen bg-paper">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <a href="/" className="text-sm text-brand-blue">
-            Back
-          </a>
-          <h1 className="text-lg font-bold text-ink mt-1">Log Time</h1>
-        </div>
-        {/* Profile placeholder — visual only for now, no menu/account page
-            built yet. Flagged clearly rather than wired to nothing. */}
-        <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-sm font-medium">
-          {user.email?.[0]?.toUpperCase() ?? '?'}
-        </div>
-      </header>
+      <AppHeader title="Log Time" />
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr_280px] gap-6">
