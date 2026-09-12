@@ -77,7 +77,7 @@ export default async function TimesheetPage({
         .maybeSingle(),
       supabase
         .from('projects')
-        .select('id, name, is_detailed, tasks(id, name)')
+        .select('id, name, is_detailed, tasks(id, name, due_date)')
         .eq('is_active', true)
         .order('name'),
       // Whole Mon–Fri range for the "This Week" overview below — separate
@@ -98,7 +98,7 @@ export default async function TimesheetPage({
       // "Assigned to you" below, separate from the day-specific sections.
       supabase
         .from('tasks')
-        .select('id, name, status, projects(name)')
+        .select('id, name, status, due_date, projects(name)')
         .eq('assigned_to', user.id)
         .order('name'),
     ])
@@ -111,7 +111,7 @@ export default async function TimesheetPage({
   }))
   const projects = (projectsRes.data ?? []).map((p) => ({
     ...p,
-    tasks: (p.tasks as { id: number; name: string }[]) ?? [],
+    tasks: (p.tasks as { id: number; name: string; due_date: string | null }[]) ?? [],
   }))
 
   // Per-day totals for the week overview — work and leave combined, same

@@ -74,3 +74,20 @@ export async function assignTask(taskId: number, employeeId: string | null): Pro
   revalidatePath('/admin/projects')
   return { success: true }
 }
+
+export async function setTaskDueDate(taskId: number, dueDate: string | null): Promise<ActionResult> {
+  const supabase = await createClient()
+  // Purely informational — never restricts how time gets logged. Same
+  // admin-only enforcement as assignTask above, and the database
+  // (migration 00015) separately makes sure an assignee can never change
+  // this themselves, only their own task's status.
+  const { error } = await supabase
+    .from('tasks')
+    .update({ due_date: dueDate })
+    .eq('id', taskId)
+
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/admin/projects')
+  return { success: true }
+}

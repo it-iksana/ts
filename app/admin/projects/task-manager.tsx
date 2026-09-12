@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { createTask, assignTask } from './actions'
+import { createTask, assignTask, setTaskDueDate } from './actions'
 
-type Task = { id: number; name: string; assigned_to: string | null }
+type Task = { id: number; name: string; assigned_to: string | null; due_date: string | null }
 type Employee = { id: string; full_name: string }
 
 export default function TaskManager({
@@ -17,7 +17,7 @@ export default function TaskManager({
 }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [assignError, setAssignError] = useState<Record<number, string>>({})
+  const [rowError, setRowError] = useState<Record<number, string>>({})
 
   async function handleSubmit(formData: FormData) {
     setError('')
@@ -40,14 +40,26 @@ export default function TaskManager({
   }
 
   async function handleAssign(taskId: number, employeeId: string) {
-    setAssignError((prev) => ({ ...prev, [taskId]: '' }))
+    setRowError((prev) => ({ ...prev, [taskId]: '' }))
     try {
       const result = await assignTask(taskId, employeeId === '' ? null : employeeId)
       if (!result.success) {
-        setAssignError((prev) => ({ ...prev, [taskId]: result.error }))
+        setRowError((prev) => ({ ...prev, [taskId]: result.error }))
       }
     } catch {
-      setAssignError((prev) => ({ ...prev, [taskId]: 'Something went wrong.' }))
+      setRowError((prev) => ({ ...prev, [taskId]: 'Something went wrong.' }))
+    }
+  }
+
+  async function handleDueDate(taskId: number, dueDate: string) {
+    setRowError((prev) => ({ ...prev, [taskId]: '' }))
+    try {
+      const result = await setTaskDueDate(taskId, dueDate === '' ? null : dueDate)
+      if (!result.success) {
+        setRowError((prev) => ({ ...prev, [taskId]: result.error }))
+      }
+    } catch {
+      setRowError((prev) => ({ ...prev, [taskId]: 'Something went wrong.' }))
     }
   }
 
@@ -60,23 +72,31 @@ export default function TaskManager({
       <div className="space-y-2 mb-3">
         {tasks.map((t) => (
           <div key={t.id}>
-            <div className="flex items-center justify-between gap-3 text-sm">
+            <div className="flex items-center justify-between gap-2 text-sm">
               <span className="text-ink">{t.name}</span>
-              <select
-                defaultValue={t.assigned_to ?? ''}
-                onChange={(e) => handleAssign(t.id, e.target.value)}
-                className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
-              >
-                <option value="">Unassigned</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.full_name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 shrink-0">
+                <input
+                  type="date"
+                  defaultValue={t.due_date ?? ''}
+                  onChange={(e) => handleDueDate(t.id, e.target.value)}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
+                />
+                <select
+                  defaultValue={t.assigned_to ?? ''}
+                  onChange={(e) => handleAssign(t.id, e.target.value)}
+                  className="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-white"
+                >
+                  <option value="">Unassigned</option>
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.full_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-            {assignError[t.id] && (
-              <p className="text-xs text-red-600 mt-1">{assignError[t.id]}</p>
+            {rowError[t.id] && (
+              <p className="text-xs text-red-600 mt-1">{rowError[t.id]}</p>
             )}
           </div>
         ))}

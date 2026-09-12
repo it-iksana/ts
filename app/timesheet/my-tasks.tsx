@@ -7,6 +7,7 @@ type MyTask = {
   id: number
   name: string
   status: string
+  due_date: string | null
   projects: { name: string } | null
 }
 
@@ -14,6 +15,26 @@ const STATUS_LABELS: Record<string, string> = {
   not_started: 'Not Started',
   in_progress: 'In Progress',
   done: 'Done',
+}
+
+function formatDueDate(iso: string) {
+  return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+// Purely informational — never affects how much time can be logged
+// against a task on any given day, just a heads-up on how urgent it is.
+function dueDateColor(iso: string, status: string) {
+  if (status === 'done') return 'text-slate-400'
+  const today = new Date().toISOString().slice(0, 10)
+  if (iso < today) return 'text-red-600'
+  const twoDaysOut = new Date()
+  twoDaysOut.setDate(twoDaysOut.getDate() + 2)
+  if (iso <= twoDaysOut.toISOString().slice(0, 10)) return 'text-amber-600'
+  return 'text-slate-500'
 }
 
 export default function MyTasks({ tasks }: { tasks: MyTask[] }) {
@@ -42,6 +63,11 @@ export default function MyTasks({ tasks }: { tasks: MyTask[] }) {
             <div>
               <span className="text-ink">{t.name}</span>
               {t.projects && <span className="text-slate-500"> · {t.projects.name}</span>}
+              {t.due_date && (
+                <span className={`ml-2 text-xs ${dueDateColor(t.due_date, t.status)}`}>
+                  Due {formatDueDate(t.due_date)}
+                </span>
+              )}
               {errors[t.id] && <p className="text-xs text-red-600 mt-1">{errors[t.id]}</p>}
             </div>
             <select

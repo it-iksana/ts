@@ -11,7 +11,7 @@ export default async function ProjectsPage() {
   const [projectsRes, employeesRes] = await Promise.all([
     supabase
       .from('projects')
-      .select('id, name, is_detailed, is_active, tasks(id, name, assigned_to)')
+      .select('id, name, is_detailed, is_active, tasks(id, name, assigned_to, due_date)')
       .order('name'),
     supabase
       .from('employees')
@@ -61,7 +61,7 @@ export default async function ProjectsPage() {
                 <TaskManager
                   projectId={project.id}
                   tasks={
-                    (project.tasks as { id: number; name: string; assigned_to: string | null }[]) ??
+                    (project.tasks as { id: number; name: string; assigned_to: string | null; due_date: string | null }[]) ??
                     []
                   }
                   employees={employees}

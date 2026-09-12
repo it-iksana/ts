@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { addTimesheetEntry } from './actions'
 
-type Task = { id: number; name: string }
+type Task = { id: number; name: string; due_date: string | null }
 type Project = { id: number; name: string; is_detailed: boolean; tasks: Task[] }
 
 const FRACTION_OPTIONS = [
@@ -12,6 +12,14 @@ const FRACTION_OPTIONS = [
   { value: 0.75, label: '¾' },
   { value: 1, label: 'Full' },
 ]
+
+function formatShortDate(iso: string) {
+  return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
 
 export default function AddEntryForm({
   entryDate,
@@ -94,6 +102,7 @@ export default function AddEntryForm({
               {selectedProject.tasks.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
+                  {t.due_date ? ` (Due ${formatShortDate(t.due_date)})` : ''}
                 </option>
               ))}
             </select>
