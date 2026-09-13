@@ -25,6 +25,15 @@ export function monthBounds(monthStart: string) {
 
 export type CostReportRow = { label: string; cost: number }
 
+export type CostReportDetailRow = {
+  employee: string
+  department: string
+  project: string
+  date: string
+  dayFraction: number
+  cost: number
+}
+
 export type CostReport = {
   monthStart: string
   monthEnd: string
@@ -33,6 +42,7 @@ export type CostReport = {
   byProject: CostReportRow[]
   byDepartment: CostReportRow[]
   byEmployee: CostReportRow[]
+  detail: CostReportDetailRow[]
   missingRateCount: number
 }
 
@@ -59,7 +69,7 @@ export async function computeCostReport(
       .order('effective_from', { ascending: true }),
     supabase
       .from('timesheet_entries')
-      .select('employee_id, project_id, day_fraction, projects(name)')
+      .select('employee_id, project_id, entry_date, day_fraction, projects(name)')
       .gte('entry_date', monthStart)
       .lte('entry_date', monthEnd),
   ])
@@ -78,6 +88,7 @@ export async function computeCostReport(
   const costByDepartment = new Map<string, number>()
   const costByEmployee = new Map<string, number>()
   const missingRateFor = new Set<string>()
+  const detail: CostReportDetailRow[] = []
 
   for (const entry of entries) {
     const rate = rateByEmployee.get(entry.employee_id)
@@ -99,7 +110,18 @@ export async function computeCostReport(
 
     const employeeLabel = employee?.full_name ?? employee?.employee_code ?? entry.employee_id
     costByEmployee.set(employeeLabel, (costByEmployee.get(employeeLabel) ?? 0) + cost)
+
+    detail.push({
+      employee: employeeLabel,
+      department: deptName,
+      project: projectName,
+      date: entry.entry_date,
+      dayFraction: Number(entry.day_fraction),
+      cost,
+    })
   }
+
+  detail.sort((a, b) => a.date.localeCompare(b.date) || a.employee.localeCompare(b.employee))
 
   const toRows = (map: Map<string, number>): CostReportRow[] =>
     [...map.entries()].sort((a, b) => b[1] - a[1]).map(([label, cost]) => ({ label, cost }))
@@ -114,6 +136,7 @@ export async function computeCostReport(
     byProject: toRows(costByProject),
     byDepartment: toRows(costByDepartment),
     byEmployee: toRows(costByEmployee),
+    detail,
     missingRateCount: missingRateFor.size,
   }
 }
@@ -126,12 +149,16 @@ function formatMonthLabel(monthStart: string) {
   })
 }
 
+export type ReportType = 'project' | 'department' | 'employee' | 'detail'
+
 /**
- * Builds the actual .xlsx workbook from an already-computed report.
- * Separated from computeCostReport() so this can be tested directly
- * against known data, independent of needing a real database session.
+ * Builds one focused .xlsx workbook — a single summary sheet for
+ * 'project' / 'department' / 'employee', or one detailed row-level sheet
+ * (every entry, unaggregated) for 'detail'. Separated from
+ * computeCostReport() so this can be tested directly against known data,
+ * independent of needing a real database session.
  */
-export function buildCostReportWorkbook(report: CostReport): ExcelJS.Workbook {
+export function buildCostReportWorkbook(report: CostReport, type: ReportType): ExcelJS.Workbook {
   const monthLabel = formatMonthLabel(report.monthStart)
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'iKSANA Timesheet'
@@ -139,7 +166,20 @@ export function buildCostReportWorkbook(report: CostReport): ExcelJS.Workbook {
 
   const currencyFormat = '₹#,##0;(₹#,##0)'
 
-  function addSheet(name: string, columnHeader: string, rows: CostReportRow[]) {
+  function addNotes(sheet: ExcelJS.Worksheet, startRow: number) {
+    let row = startRow
+    if (report.missingRateCount > 0) {
+      sheet.getCell(`A${row}`).value =
+        `${report.missingRateCount} employee(s) logged time this month with no cost rate on file — excluded from this report.`
+      sheet.getCell(`A${row}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
+      row++
+    }
+    sheet.getCell(`A${row}`).value =
+      `Working days: ${report.workingDays} (Mon–Fri only — no holiday calendar exists yet).`
+    sheet.getCell(`A${row}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
+  }
+
+  function addSummarySheet(name: string, columnHeader: string, rows: CostReportRow[]) {
     const sheet = workbook.addWorksheet(name)
 
     // Title row written first, so every row added after this lands at
@@ -162,32 +202,63 @@ export function buildCostReportWorkbook(report: CostReport): ExcelJS.Workbook {
       rowNum++
     }
 
-    const firstDataRow = 3
-    const lastDataRow = rowNum - 1
     const totalRowNum = rowNum
     sheet.getCell(`A${totalRowNum}`).value = 'Total'
     sheet.getCell(`B${totalRowNum}`).value = {
-      formula: rows.length > 0 ? `SUM(B${firstDataRow}:B${lastDataRow})` : '0',
+      formula: rows.length > 0 ? `SUM(B3:B${totalRowNum - 1})` : '0',
     }
     sheet.getRow(totalRowNum).font = { bold: true }
-
     sheet.getColumn('B').numFmt = currencyFormat
 
-    let noteRow = totalRowNum + 2
-    if (report.missingRateCount > 0) {
-      sheet.getCell(`A${noteRow}`).value =
-        `${report.missingRateCount} employee(s) logged time this month with no cost rate on file — excluded from this total.`
-      sheet.getCell(`A${noteRow}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
-      noteRow++
-    }
-    sheet.getCell(`A${noteRow}`).value =
-      `Working days: ${report.workingDays} (Mon–Fri only — no holiday calendar exists yet).`
-    sheet.getCell(`A${noteRow}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
+    addNotes(sheet, totalRowNum + 2)
   }
 
-  addSheet('By Project', 'Project', report.byProject)
-  addSheet('By Department', 'Department', report.byDepartment)
-  addSheet('By Employee', 'Employee', report.byEmployee)
+  function addDetailSheet() {
+    const sheet = workbook.addWorksheet('All Data')
+
+    sheet.mergeCells('A1:F1')
+    sheet.getCell('A1').value = `All Data — ${monthLabel}`
+    sheet.getRow(1).font = { bold: true, size: 13 }
+
+    const headers = ['Date', 'Employee', 'Department', 'Project', 'Day Fraction', 'Cost']
+    headers.forEach((h, i) => {
+      sheet.getCell(2, i + 1).value = h
+    })
+    sheet.getRow(2).font = { bold: true }
+    sheet.getColumn(1).width = 12
+    sheet.getColumn(2).width = 24
+    sheet.getColumn(3).width = 20
+    sheet.getColumn(4).width = 28
+    sheet.getColumn(5).width = 12
+    sheet.getColumn(6).width = 16
+
+    let rowNum = 3
+    for (const row of report.detail) {
+      sheet.getCell(rowNum, 1).value = row.date
+      sheet.getCell(rowNum, 2).value = row.employee
+      sheet.getCell(rowNum, 3).value = row.department
+      sheet.getCell(rowNum, 4).value = row.project
+      sheet.getCell(rowNum, 5).value = row.dayFraction
+      sheet.getCell(rowNum, 6).value = row.cost
+      rowNum++
+    }
+
+    const totalRowNum = rowNum
+    sheet.getCell(totalRowNum, 4).value = 'Total'
+    sheet.getCell(totalRowNum, 4).font = { bold: true }
+    sheet.getCell(totalRowNum, 6).value = {
+      formula: report.detail.length > 0 ? `SUM(F3:F${totalRowNum - 1})` : '0',
+    }
+    sheet.getRow(totalRowNum).font = { bold: true }
+    sheet.getColumn(6).numFmt = currencyFormat
+
+    addNotes(sheet, totalRowNum + 2)
+  }
+
+  if (type === 'project') addSummarySheet('By Project', 'Project', report.byProject)
+  else if (type === 'department') addSummarySheet('By Department', 'Department', report.byDepartment)
+  else if (type === 'employee') addSummarySheet('By Employee', 'Employee', report.byEmployee)
+  else addDetailSheet()
 
   return workbook
 }

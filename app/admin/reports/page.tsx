@@ -61,17 +61,16 @@ export default async function ReportsPage({
           </a>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-xs text-slate-400 max-w-md">
-            Working days counted as Mon–Fri only — no holiday calendar exists yet, so this
-            doesn&apos;t yet account for holidays falling in this month.
-          </p>
-          <a
-            href={`/admin/reports/export?month=${monthStart}`}
-            className="text-sm bg-brand-blue text-white rounded-lg px-4 py-2 font-medium whitespace-nowrap ml-4"
-          >
-            Download Excel
-          </a>
+        <p className="text-xs text-slate-400 mb-3">
+          Working days counted as Mon–Fri only — no holiday calendar exists yet, so this
+          doesn&apos;t yet account for holidays falling in this month.
+        </p>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          <ExportLink monthStart={monthStart} type="project" label="Download: By Project" />
+          <ExportLink monthStart={monthStart} type="department" label="Download: By Department" />
+          <ExportLink monthStart={monthStart} type="employee" label="Download: By Employee" />
+          <ExportLink monthStart={monthStart} type="detail" label="Download: All Data" />
         </div>
 
         {report.missingRateCount > 0 && (
@@ -111,5 +110,24 @@ function ReportCard({ title, rows }: { title: string; rows: CostReportRow[] }) {
         </div>
       )}
     </div>
+  )
+}
+
+function ExportLink({
+  monthStart,
+  type,
+  label,
+}: {
+  monthStart: string
+  type: 'project' | 'department' | 'employee' | 'detail'
+  label: string
+}) {
+  return (
+    <a
+      href={`/admin/reports/export?month=${monthStart}&type=${type}`}
+      className="text-sm bg-white border border-slate-200 hover:border-brand-blue text-ink rounded-lg px-4 py-2 font-medium whitespace-nowrap transition-colors"
+    >
+      {label}
+    </a>
   )
 }

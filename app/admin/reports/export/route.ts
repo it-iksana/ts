@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { computeCostReport, buildCostReportWorkbook } from '@/lib/cost-report'
+import { computeCostReport, buildCostReportWorkbook, type ReportType } from '@/lib/cost-report'
+
+const VALID_TYPES: ReportType[] = ['project', 'department', 'employee', 'detail']
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -26,14 +28,26 @@ export async function GET(request: NextRequest) {
 
   const monthStart =
     request.nextUrl.searchParams.get('month') ?? new Date().toISOString().slice(0, 7) + '-01'
+
+  const typeParam = request.nextUrl.searchParams.get('type')
+  const type = (VALID_TYPES as string[]).includes(typeParam ?? '')
+    ? (typeParam as ReportType)
+    : null
+  if (!type) {
+    return NextResponse.json(
+      { error: `Invalid or missing type. Use one of: ${VALID_TYPES.join(', ')}` },
+      { status: 400 }
+    )
+  }
+
   const report = await computeCostReport(supabase, monthStart)
-  const workbook = buildCostReportWorkbook(report)
+  const workbook = buildCostReportWorkbook(report, type)
   const buffer = await workbook.xlsx.writeBuffer()
 
   return new NextResponse(buffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="cost-report-${monthStart}.xlsx"`,
+      'Content-Disposition': `attachment; filename="cost-report-${type}-${monthStart}.xlsx"`,
     },
   })
 }
