@@ -1,16 +1,19 @@
 import ExcelJS from 'exceljs'
 import { SupabaseClient } from '@supabase/supabase-js'
 
-export function countWorkingDays(monthStart: string, monthEnd: string): number {
-  // Mon–Fri only. No holiday calendar exists yet, so this doesn't
-  // account for holidays — a known, deliberate simplification, not an
-  // oversight. Flagged clearly wherever this is shown.
+export function countWorkingDays(
+  monthStart: string,
+  monthEnd: string,
+  holidayDates: Set<string> = new Set()
+): number {
+  // Mon–Fri, minus any date in holidayDates.
   let count = 0
   const d = new Date(monthStart + 'T00:00:00Z')
   const end = new Date(monthEnd + 'T00:00:00Z')
   while (d <= end) {
     const day = d.getUTCDay()
-    if (day !== 0 && day !== 6) count++
+    const iso = d.toISOString().slice(0, 10)
+    if (day !== 0 && day !== 6 && !holidayDates.has(iso)) count++
     d.setUTCDate(d.getUTCDate() + 1)
   }
   return count
@@ -38,6 +41,7 @@ export type CostReport = {
   monthStart: string
   monthEnd: string
   workingDays: number
+  holidayCount: number
   totalCost: number
   byProject: CostReportRow[]
   byDepartment: CostReportRow[]
@@ -56,7 +60,14 @@ export async function computeCostReport(
   monthStart: string
 ): Promise<CostReport> {
   const monthEnd = monthBounds(monthStart)
-  const workingDays = countWorkingDays(monthStart, monthEnd)
+
+  const holidaysRes = await supabase
+    .from('holidays')
+    .select('holiday_date')
+    .gte('holiday_date', monthStart)
+    .lte('holiday_date', monthEnd)
+  const holidayDates = new Set((holidaysRes.data ?? []).map((h) => h.holiday_date))
+  const workingDays = countWorkingDays(monthStart, monthEnd, holidayDates)
 
   const [employeesRes, ratesRes, entriesRes] = await Promise.all([
     supabase
@@ -132,6 +143,7 @@ export async function computeCostReport(
     monthStart,
     monthEnd,
     workingDays,
+    holidayCount: holidayDates.size,
     totalCost,
     byProject: toRows(costByProject),
     byDepartment: toRows(costByDepartment),
@@ -175,7 +187,7 @@ export function buildCostReportWorkbook(report: CostReport, type: ReportType): E
       row++
     }
     sheet.getCell(`A${row}`).value =
-      `Working days: ${report.workingDays} (Mon–Fri only — no holiday calendar exists yet).`
+      `Working days: ${report.workingDays} (Mon–Fri, minus ${report.holidayCount} holiday(s) this month).`
     sheet.getCell(`A${row}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
   }
 

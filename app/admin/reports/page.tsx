@@ -62,8 +62,11 @@ export default async function ReportsPage({
         </div>
 
         <p className="text-xs text-slate-400 mb-3">
-          Working days counted as Mon–Fri only — no holiday calendar exists yet, so this
-          doesn&apos;t yet account for holidays falling in this month.
+          Working days: {report.workingDays} (Mon–Fri, minus {report.holidayCount} holiday
+          {report.holidayCount === 1 ? '' : 's'} this month).{' '}
+          <a href="/admin/holidays" className="text-brand-blue hover:underline">
+            Manage holidays
+          </a>
         </p>
 
         <div className="flex flex-wrap gap-2 mb-6">

@@ -66,6 +66,12 @@ export default function MenuDropdown({
               >
                 Departments
               </a>
+              <a
+                href="/admin/holidays"
+                className="block px-4 py-2 text-sm text-ink hover:bg-paper"
+              >
+                Holidays
+              </a>
               {isCostAdmin && (
                 <a
                   href="/admin/reports"
