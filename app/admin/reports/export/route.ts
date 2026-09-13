@@ -40,14 +40,26 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  // project/department/employee are now filtered, single-entity reports
+  // — a specific value is required, rather than silently falling back to
+  // dumping every project/employee/department in one file.
+  const filterValue = request.nextUrl.searchParams.get('filter') ?? undefined
+  if (type !== 'detail' && !filterValue) {
+    return NextResponse.json(
+      { error: `A specific ${type} must be selected for this report.` },
+      { status: 400 }
+    )
+  }
+
   const report = await computeCostReport(supabase, monthStart)
-  const workbook = buildCostReportWorkbook(report, type)
+  const workbook = buildCostReportWorkbook(report, type, filterValue)
   const buffer = await workbook.xlsx.writeBuffer()
 
+  const filenamePart = filterValue ? `${type}-${filterValue}` : type
   return new NextResponse(buffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="cost-report-${type}-${monthStart}.xlsx"`,
+      'Content-Disposition': `attachment; filename="cost-report-${filenamePart}-${monthStart}.xlsx"`.replace(/[/\\]/g, '-'),
     },
   })
 }

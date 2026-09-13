@@ -164,13 +164,25 @@ function formatMonthLabel(monthStart: string) {
 export type ReportType = 'project' | 'department' | 'employee' | 'detail'
 
 /**
- * Builds one focused .xlsx workbook — a single summary sheet for
- * 'project' / 'department' / 'employee', or one detailed row-level sheet
- * (every entry, unaggregated) for 'detail'. Separated from
- * computeCostReport() so this can be tested directly against known data,
- * independent of needing a real database session.
+ * Builds one focused .xlsx workbook.
+ *
+ * 'project' / 'department' / 'employee' require a filterValue — the one
+ * specific project, department, or employee to report on. Rather than a
+ * flat list of every project (unusable once there are 100 of them), this
+ * produces a row-level breakdown scoped to just that one: who worked on
+ * it, on what date, and at what cost — the dimension you filtered by is
+ * fixed, so its own column is omitted as redundant.
+ *
+ * 'detail' remains the genuinely unfiltered "everything" export, unchanged.
+ *
+ * Separated from computeCostReport() so this can be tested directly
+ * against known data, independent of needing a real database session.
  */
-export function buildCostReportWorkbook(report: CostReport, type: ReportType): ExcelJS.Workbook {
+export function buildCostReportWorkbook(
+  report: CostReport,
+  type: ReportType,
+  filterValue?: string
+): ExcelJS.Workbook {
   const monthLabel = formatMonthLabel(report.monthStart)
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'iKSANA Timesheet'
@@ -191,36 +203,61 @@ export function buildCostReportWorkbook(report: CostReport, type: ReportType): E
     sheet.getCell(`A${row}`).font = { italic: true, size: 9, color: { argb: 'FF888888' } }
   }
 
-  function addSummarySheet(name: string, columnHeader: string, rows: CostReportRow[]) {
-    const sheet = workbook.addWorksheet(name)
+  // A row-level breakdown scoped to one specific project, department, or
+  // employee — the fixed dimension's own column is omitted since every
+  // row shares the same value for it.
+  function addFilteredDetailSheet(
+    sheetName: string,
+    filterKey: 'project' | 'department' | 'employee',
+    value: string
+  ) {
+    const sheet = workbook.addWorksheet(sheetName)
+    const rows = report.detail.filter((r) => r[filterKey] === value)
 
-    // Title row written first, so every row added after this lands at
-    // its correct final position — no later insertRow() to shift
-    // anything out from under an already-written formula.
-    sheet.mergeCells('A1:B1')
-    sheet.getCell('A1').value = `${name} — ${monthLabel}`
+    const columns: { header: string; key: keyof CostReportDetailRow; width: number }[] = [
+      { header: 'Date', key: 'date', width: 12 },
+      ...(filterKey === 'project'
+        ? ([{ header: 'Employee', key: 'employee', width: 24 }, { header: 'Department', key: 'department', width: 20 }] as const)
+        : filterKey === 'employee'
+          ? ([{ header: 'Project', key: 'project', width: 28 }, { header: 'Department', key: 'department', width: 20 }] as const)
+          : ([{ header: 'Employee', key: 'employee', width: 24 }, { header: 'Project', key: 'project', width: 28 }] as const)),
+      { header: 'Day Fraction', key: 'dayFraction', width: 12 },
+      { header: 'Cost', key: 'cost', width: 16 },
+    ]
+
+    sheet.mergeCells(1, 1, 1, columns.length)
+    sheet.getCell(1, 1).value = `${sheetName}: ${value} — ${monthLabel}`
     sheet.getRow(1).font = { bold: true, size: 13 }
 
-    sheet.getCell('A2').value = columnHeader
-    sheet.getCell('B2').value = 'Cost'
+    columns.forEach((col, i) => {
+      sheet.getCell(2, i + 1).value = col.header
+      sheet.getColumn(i + 1).width = col.width
+    })
     sheet.getRow(2).font = { bold: true }
-    sheet.getColumn('A').width = 36
-    sheet.getColumn('B').width = 18
 
     let rowNum = 3
     for (const row of rows) {
-      sheet.getCell(`A${rowNum}`).value = row.label
-      sheet.getCell(`B${rowNum}`).value = row.cost
+      columns.forEach((col, i) => {
+        sheet.getCell(rowNum, i + 1).value = row[col.key]
+      })
       rowNum++
     }
 
+    const costColIndex = columns.length
     const totalRowNum = rowNum
-    sheet.getCell(`A${totalRowNum}`).value = 'Total'
-    sheet.getCell(`B${totalRowNum}`).value = {
-      formula: rows.length > 0 ? `SUM(B3:B${totalRowNum - 1})` : '0',
+    sheet.getCell(totalRowNum, costColIndex - 1).value = 'Total'
+    sheet.getCell(totalRowNum, costColIndex - 1).font = { bold: true }
+    const costColLetter = String.fromCharCode(64 + costColIndex)
+    sheet.getCell(totalRowNum, costColIndex).value = {
+      formula: rows.length > 0 ? `SUM(${costColLetter}3:${costColLetter}${totalRowNum - 1})` : '0',
     }
     sheet.getRow(totalRowNum).font = { bold: true }
-    sheet.getColumn('B').numFmt = currencyFormat
+    sheet.getColumn(costColIndex).numFmt = currencyFormat
+
+    if (rows.length === 0) {
+      sheet.getCell(3, 1).value = 'No entries found for this selection.'
+      sheet.getCell(3, 1).font = { italic: true, color: { argb: 'FF888888' } }
+    }
 
     addNotes(sheet, totalRowNum + 2)
   }
@@ -267,9 +304,11 @@ export function buildCostReportWorkbook(report: CostReport, type: ReportType): E
     addNotes(sheet, totalRowNum + 2)
   }
 
-  if (type === 'project') addSummarySheet('By Project', 'Project', report.byProject)
-  else if (type === 'department') addSummarySheet('By Department', 'Department', report.byDepartment)
-  else if (type === 'employee') addSummarySheet('By Employee', 'Employee', report.byEmployee)
+  if (type === 'project' && filterValue) addFilteredDetailSheet('By Project', 'project', filterValue)
+  else if (type === 'department' && filterValue)
+    addFilteredDetailSheet('By Department', 'department', filterValue)
+  else if (type === 'employee' && filterValue)
+    addFilteredDetailSheet('By Employee', 'employee', filterValue)
   else addDetailSheet()
 
   return workbook
