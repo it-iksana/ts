@@ -1,7 +1,8 @@
 import { requireCostAdmin } from '@/lib/require-cost-admin'
 import { createClient } from '@/lib/supabase/server'
-import { computeCostReport, type CostReportRow } from '@/lib/cost-report'
+import { computeCostReport } from '@/lib/cost-report'
 import AppHeader from '../../_components/app-header'
+import FilterableReportCard from './filterable-report-card'
 
 function formatMonthLabel(monthStart: string) {
   return new Date(monthStart + 'T00:00:00Z').toLocaleDateString('en-US', {
@@ -85,22 +86,23 @@ export default async function ReportsPage({
         )}
 
         <p className="text-xs text-slate-400 mb-2">
-          Click any row below to download that one&apos;s own detailed breakdown.
+          Type to search and select a specific project, department, or employee to download
+          its own detailed breakdown.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ReportCard
+          <FilterableReportCard
             title="By Project"
             rows={report.byProject}
             monthStart={monthStart}
             type="project"
           />
-          <ReportCard
+          <FilterableReportCard
             title="By Department"
             rows={report.byDepartment}
             monthStart={monthStart}
             type="department"
           />
-          <ReportCard
+          <FilterableReportCard
             title="By Employee"
             rows={report.byEmployee}
             monthStart={monthStart}
@@ -109,41 +111,5 @@ export default async function ReportsPage({
         </div>
       </div>
     </main>
-  )
-}
-
-function ReportCard({
-  title,
-  rows,
-  monthStart,
-  type,
-}: {
-  title: string
-  rows: CostReportRow[]
-  monthStart: string
-  type: 'project' | 'department' | 'employee'
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 p-5">
-      <h2 className="font-semibold text-ink mb-4">{title}</h2>
-      {rows.length === 0 ? (
-        <p className="text-sm text-slate-400">No data for this month.</p>
-      ) : (
-        <div className="space-y-1">
-          {rows.map((row) => (
-            <a
-              key={row.label}
-              href={`/admin/reports/export?month=${monthStart}&type=${type}&filter=${encodeURIComponent(row.label)}`}
-              className="flex items-center justify-between text-sm px-2 py-1.5 -mx-2 rounded-lg hover:bg-paper transition-colors"
-            >
-              <span className="text-ink truncate pr-2">{row.label}</span>
-              <span className="text-slate-600 whitespace-nowrap">
-                ₹{row.cost.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-              </span>
-            </a>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
